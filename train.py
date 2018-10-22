@@ -6,10 +6,10 @@ import numpy as np
 
 def create_callbacks():
     callbacks = []
-    checkpoint = keras.callbacks.ModelCheckpoint('snapshots/gestures_{epoch:02d}-{val_loss:.2f}-{val_acc:.2f}.hdf5', verbose=1)
+    checkpoint = keras.callbacks.ModelCheckpoint('snapshots/gestures_multi_{epoch:02d}-{val_loss:.2f}-{val_acc:.2f}.hdf5', verbose=1)
     callbacks.append(checkpoint)
 
-    tb_callback = keras.callbacks.TensorBoard(log_dir='./logs/run_1')
+    tb_callback = keras.callbacks.TensorBoard(log_dir='./logs/run_2')
     callbacks.append(tb_callback)
 
     reduce_lr = keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=6, min_lr = 0.00001)
@@ -18,24 +18,30 @@ def create_callbacks():
     return callbacks
 
 if __name__ == '__main__':
+    classes = len(loader.CLS_DICT)
 
     # get the model
-    input_layer = keras.layers.Input((224,224,3))
-    classes = len(loader.CLS_DICT)
+    pseudo_input_layer = keras.layers.Input((224,224,12))
+    input_layer = keras.layers.Conv2D(3,(1,1))(pseudo_input_layer)
+
+    model = keras.models.load_model('D:/Skola/PhD/code/gestures/snapshots/gestures_01-1.49-0.71.hdf5')(input_layer)
+
+
     # model = keras_resnet.models.ResNet18(input_layer, classes=classes, freeze_bn = False)
 
-    resnet_model = keras.applications.resnet50.ResNet50(include_top=False, weights='imagenet', input_tensor=input_layer,
-                                         pooling='avg')
+    # resnet_model = keras.applications.resnet50.ResNet50(include_top=False, weights='imagenet', input_tensor=input_layer,
+    #                                      pooling='avg')
 
     # for layer in resnet_model.layers:
     #     layer.trainable = False
 
-    x = resnet_model.output
-    # x = keras.layers.GlobalAveragePooling2D()(x)
-    x = keras.layers.Dense(1024, activation='relu')(x)
-    predictions = keras.layers.Dense(classes, activation='softmax')(x)
+    # x = resnet_model.output
+    # # x = keras.layers.GlobalAveragePooling2D()(x)
+    # x = keras.layers.Dense(1024, activation='relu')(x)
+    # predictions = keras.layers.Dense(classes, activation='softmax')(x)
 
-    model = keras.Model(inputs=resnet_model.input, outputs=predictions)
+    model = keras.Model(inputs=pseudo_input_layer, outputs=model)
+    # model = keras.Model(inputs=input_layer, outputs=predictions)
     adam = keras.optimizers.adam(lr=0.0001, beta_1=0.9, beta_2=0.999)
     model.compile(adam, loss='categorical_crossentropy', metrics=['accuracy'])
 
@@ -44,6 +50,9 @@ if __name__ == '__main__':
 
     # prepare val_data
     val_X,val_y = loader.load('D:\Skola\PhD\data\gesture_dataset_2018_09_18\dataset',[9,10], 5)
+
+    print(val_X.shape)
+    print(train_X.shape)
 
     callbacks = create_callbacks()
 

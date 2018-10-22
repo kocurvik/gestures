@@ -45,15 +45,25 @@ def load(dataset_path, list, limit):
         if cls is None:
             continue
         n_files = int(len([name for name in os.listdir(folder)])/2)
-        for i in range(limit,n_files-limit):
-            r_name = 'right{}.jpg'.format(i+1)
-            l_name = 'left{}.jpg'.format(i+1)
+        r_images = []
+        l_images = []
+        for i in range(limit-2,n_files-limit+2):
+            r_name = 'right{}.jpg'.format(i)
+            l_name = 'left{}.jpg'.format(i)
             r_img = load_image(os.path.join(folder, r_name))
             l_img = load_image(os.path.join(folder, l_name))
-            X.append(r_img)
-            Y.append(cls)
-            X.append(l_img)
-            Y.append(cls)
+            r_images.append(r_img)
+            l_images.append(l_img)
+
+            l = len(r_images)
+            if l >= 4:
+                r_images_stacked = np.concatenate(l_images[l-4:l], axis = 2)
+                l_images_stacked = np.concatenate(l_images[l-4:l], axis = 2)
+                X.append(r_images_stacked)
+                Y.append(cls)
+                X.append(l_images_stacked)
+                Y.append(cls)
+
     X = np.stack(X, axis=0)
     Y = np.stack(Y, axis=0)
     Y = keras.utils.np_utils.to_categorical(Y)
